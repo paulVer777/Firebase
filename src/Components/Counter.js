@@ -1,79 +1,54 @@
 import React from 'react'
 import {database} from '../firebase'
 import TextField from 'material-ui/TextField'
+import RaisedButton from 'material-ui/RaisedButton'
+import {mapObjectToArray} from "../utils";
+import MenuItem from 'material-ui/MenuItem';
 
 class Counter extends React.Component {
 
     state = {
-
-        counter: null,
-        data:""
+        user: "Paweł",
+        newMessage: "",
+        messages:[]
     };
 
-    send = () => (
-
-        fetch('https://isa-sandbox-88427.firebaseio.com/counter/.json',
-
-            {
-                method: 'PUT',
-                body: JSON.stringify(this.state.counter)
-
-            }
-        )
-    );
-
-    sendfi = () => (
-
-        fetch('https://isa-sandbox-88427.firebaseio.com/dane/.json',
-
-            {
-                method: 'PUT',
-                body: JSON.stringify(this.state.data)
-
-            }
-        )
-    );
-
-    tki=(event,value)=>(
-
-        this.setState({
-
-            data:value
-
-        },this.sendfi)
-    );
 
     componentDidMount() {
 
-        fetch('https://isa-sandbox-88427.firebaseio.com/counter/.json')
-            .then(response => response.json())
-            .then(data => this.setState({
+        database.ref('/chat') //wskazuje na miejsce w bazie danych, wystarczy ukosnik bo glowny adres zapisany jest w firebase js.
+            .on( //jesli stan sie zmieni, zrob cos raz(once) lub (cyklicznie)
+                'value',
+                (snapshot) => { //zawiera migawke aktualnego stanu z bazy danych, aktualny stan
 
-                counter: data
+                    this.setState({
 
-            }));
+                        messages: mapObjectToArray(snapshot.val()).reverse(), //konwertuje na tablice z obiektami
 
-        fetch('https://isa-sandbox-88427.firebaseio.com/dane/.json')
-            .then(response => response.json())
-            .then(data => this.setState({
-
-                data: data
-
-            }))
+                    })
+                }
+            )
     }
 
-    inc = () => (
+
+    addMessage = () => database.ref('/chat').push({
+
+
+        message: this.state.newMessage,
+        user: this.state.user,
+        timestamp: Date.now()
+
+
+    })
+
+
+    saveMessage = (event, value) => (
 
         this.setState({
-            counter: this.state.counter + 1
-        }, this.send)
 
-    );
+            newMessage: value
 
-    dec = () => (
-        this.setState({
-            counter: this.state.counter - 1
-        }, this.send)
+        })
     );
 
     render() {
@@ -82,17 +57,50 @@ class Counter extends React.Component {
 
             <div>
 
-                {
-                    this.state.counter === null ?
+                <TextField
 
-                        <h1>Trwa ładowanie</h1>
-                        :
-                        <h1>{this.state.counter}</h1>
-                }
+                    onChange={this.saveMessage}
 
-                <TextField onChange={this.tki}/>
-                <button onClick={this.inc}>+</button>
-                <button onClick={this.dec}>-</button>
+                />
+                <RaisedButton onClick={this.addMessage}
+
+                              label={"Send"}
+                              primary={true}
+
+                />
+
+
+
+                <div>
+
+                    {
+
+                        this.state.messages.map((value)=>(
+
+
+                            <MenuItem>{`${value.user}:${value.message}`}</MenuItem>
+
+
+
+                        )  )
+
+
+
+
+
+                    }
+
+                </div>
+
+
+
+
+
+
+
+
+
+
 
             </div>
         )
